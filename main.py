@@ -11,16 +11,25 @@ def main():
     # Proceso de registro de horas
     time_recorder = TimeRecorder(db_conn)
     
-    # Actualiza los registros existentes
+    # Obtención del periodo actual
     today = datetime.today()
     period = PaymentPeriod(today)
     start_date, end_date = period.get_current_period()
-    print(f"Start Date: {start_date}, End Date: {end_date}")
-    time_recorder.update_records(start_date, today)
-
-    # Registra los datos especiales
-    time_recorder.register_special_data()
-
+    
+    # Pregunta al usuario qué función desea ejecutar
+    print("Seleccione una opción:")
+    print("1. Actualizar registros de horas")
+    print("2. Registrar datos especiales")
+    choice = input("Ingrese el número de la opción (1 o 2): ")
+    
+    # Ejecuta la función seleccionada
+    if choice == '1':
+        time_recorder.update_records(start_date, today)
+    elif choice == '2':
+        time_recorder.register_special_data()
+    else:
+        print("Opción no válida. Por favor, elija 1 o 2.")
+    
     # Cierre de la conexión
     db_conn.close()
 

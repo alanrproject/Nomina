@@ -20,16 +20,11 @@ class TimeRecord:
 
     def save(self, db_connection):
         query = """
-            INSERT INTO salario (fecha, project_id, person_id, horas, horas_ext, horas_ext_noct, horas_fest,
-                                        horas_ext_fest_noct, horas_noct, horas_noct_fest)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ON DUPLICATE KEY UPDATE horas = VALUES(horas), horas_ext = VALUES(horas_ext),
-                                    horas_ext_noct = VALUES(horas_ext_noct), horas_fest = VALUES(horas_fest),
-                                    horas_ext_fest_noct = VALUES(horas_ext_fest_noct), horas_noct = VALUES(horas_noct),
-                                    horas_noct_fest = VALUES(horas_noct_fest)
+            INSERT INTO salario (fecha, project_id, person_id, horas)
+            VALUES (%s, %s, %s, %s)
+            ON DUPLICATE KEY UPDATE horas = VALUES(horas)
         """
-        params = (self.date, self.project_id, self.person_id, self.hours, self.horas_ext, self.horas_ext_noct,
-                  self.horas_fest, self.horas_ext_fest_noct, self.horas_noct, self.horas_noct_fest)
+        params = (self.date, self.project_id, self.person_id, self.hours)
         db_connection.execute_query(query, params)
         db_connection.commit()
 
