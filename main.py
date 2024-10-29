@@ -20,13 +20,16 @@ def main():
     print("Seleccione una opción:")
     print("1. Actualizar registros de horas")
     print("2. Registrar datos especiales")
-    choice = input("Ingrese el número de la opción (1 o 2): ")
+    print("3. Actualizar resumen .xlsx")
+    choice = input("Ingrese el número de la opción (1, 2 o 3): ")
     
     # Ejecuta la función seleccionada
     if choice == '1':
         time_recorder.update_records(start_date, today)
     elif choice == '2':
         time_recorder.register_special_data()
+    elif choice == '3':
+        time_recorder.update_report()
     else:
         print("Opción no válida. Por favor, elija 1 o 2.")
     

@@ -106,6 +106,44 @@ class TimeRecorder:
             )
             record.save(self.db_connection)
 
+    def update_report(self):
+        query = """
+            SELECT 
+                s.fecha,
+                s.project_id,
+                p.name AS project_name,  -- Campo con el nombre del proyecto
+                s.person_id,
+                pe.name AS person_name,  -- Campo con el nombre de la persona
+                s.horas,
+                s.horas_ext,
+                s.horas_ext_noct,
+                s.horas_fest,
+                s.horas_ext_fest_noct,
+                s.horas_noct,
+                s.horas_noct_fest
+            FROM 
+                salario s
+            JOIN 
+                projects p ON s.project_id = p.id  -- Asume que 'id' es la clave primaria en 'projects'
+            JOIN 
+                persons pe ON s.person_id = pe.id  -- Asume que 'id' es la clave primaria en 'persons'
+            ORDER BY 
+                s.fecha, p.name, pe.name;
+        """
+        # Ejecutar la consulta y obtener los resultados
+        cursor = self.db_connection.execute_query(query)
+        data = cursor.fetchall()
+        columns = [desc[0] for desc in cursor.description]  # Obtener nombres de las columnas
+        
+        # Crear un DataFrame a partir de los resultados de la consulta
+        df = pd.DataFrame(data, columns=columns)
+        
+        # Guardar el DataFrame en un archivo de Excel
+        filename = 'reporte_salario.xlsx'
+        df.to_excel(filename, index=False)
+        print(f"Reporte guardado como {filename}")
+
+
     def register_special_data(self):
         today = datetime.today()
         period = PaymentPeriod(today)
