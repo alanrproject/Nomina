@@ -84,27 +84,77 @@ class TimeRecorder:
             ORDER BY d.date, pt.project_id;
         """
         params = (start_date.date(), start_date.date(), end_date.date())
-        print(query)
-        print(params)
         cursor = self.db_connection.execute_query(query, params)
         return cursor.fetchall()
 
     def update_records(self, start_date, end_date):
         tasks_data = self.get_tasks_data(start_date, end_date)
-        today = datetime.today()
+        specified_person_ids = {56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 73, 74, 75}
+        date_person_hours = {}
 
+        # Recolectar y agrupar horas por fecha y persona
         for task_date, project_id, person_id, total_hours in tasks_data:
-            # Verificar si el día es domingo (weekday() == 6) o festivo
-            if task_date.weekday() == 6 or self.is_holiday(task_date):
-                continue  # Omitir este registro
+            if task_date.weekday() < 6 and not self.is_holiday(task_date):  # Solo procesar de lunes a sábado
+                key = (task_date, person_id)
+                if key not in date_person_hours:
+                    date_person_hours[key] = []
+                date_person_hours[key].append((project_id, total_hours))
+
+        # Ajustar horas para cada día y persona
+        for (task_date, person_id), records in date_person_hours.items():
+            max_hours = 9 if task_date.weekday() < 5 else 1  # 9 horas para lunes-viernes, 1 hora para sábado
+            total_day_hours = sum(record[1] for record in records)
             
-            record = TimeRecord(
-                project_id=project_id,
-                person_id=person_id,
-                date=task_date,  # Cambia `today` por `task_date`
-                hours=total_hours
-            )
-            record.save(self.db_connection)
+            if total_day_hours > max_hours:
+                # Reducir horas al registro con más horas
+                records.sort(key=lambda x: -x[1])  # Ordenar de mayor a menor
+                excess_hours = total_day_hours - max_hours
+                for i, (project_id, hours) in enumerate(records):
+                    if hours > excess_hours:
+                        records[i] = (project_id, hours - excess_hours)
+                        break
+                    else:
+                        excess_hours -= hours
+                        records[i] = (project_id, 0)
+            
+            elif total_day_hours < max_hours:
+                # Completar horas con un registro en el proyecto 311
+                records.append((311, max_hours - total_day_hours))
+            
+            if len(records) >= 3:
+                # Repartir horas equitativamente si hay 3 o más registros
+                avg_hours = max_hours // len(records)
+                remainder = max_hours % len(records)
+                for i in range(len(records)):
+                    records[i] = (records[i][0], avg_hours + (1 if i < remainder else 0))
+            
+            # Guardar registros ajustados
+            for project_id, hours in records:
+                if hours > 0:
+                    record = TimeRecord(
+                        project_id=project_id,
+                        person_id=person_id,
+                        date=task_date,
+                        hours=hours
+                    )
+                    record.save(self.db_connection)
+        
+        # Crear registros para person_ids faltantes
+        all_dates = set(task_date for task_date, _ in date_person_hours)
+        for date in all_dates:
+            max_hours = 9 if date.weekday() < 5 else 1  # 9 horas para lunes-viernes, 1 hora para sábado
+            for person_id in specified_person_ids:
+                if (date, person_id) not in date_person_hours:
+                    record = TimeRecord(
+                        project_id=311,
+                        person_id=person_id,
+                        date=date,
+                        hours=max_hours
+                    )
+                    record.save(self.db_connection)
+                    print(f"Created record for person_id {person_id} on {date} with {max_hours} hours")
+        
+        print('Update completed')
 
     def update_report(self):
         query = """
